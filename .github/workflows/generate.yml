@@ -1,0 +1,161 @@
+name: Generate Spring Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: New repository name (e.g., my-service)
+        required: true
+        type: string
+      visibility:
+        description: public or private
+        required: true
+        default: public
+        type: choice
+        options:
+          - public
+          - private
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout generator repo
+        uses: actions/checkout@v4
+        with:
+          path: generator
+
+      - name: Checkout template repo
+        uses: actions/checkout@v4
+        with:
+          repository: Kaleb9301/letter-serial-backend
+          path: template
+
+      - name: Rewrite package, class, and template names
+        run: |
+          set -euo pipefail
+
+          chmod +x "${GITHUB_WORKSPACE}/generator/scripts/generate.sh"
+
+          RAW_REPO="${{ inputs.repo_name }}"
+
+          SAFE_PACKAGE_SEGMENT=$(echo "${RAW_REPO}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/_/g; s/^_+|_+$//g')
+
+          BASE_PACKAGE="com.bankofabyssinia.${SAFE_PACKAGE_SEGMENT}"
+
+          APP_NAME=$(echo "${RAW_REPO}" \
+            | sed -E 's/[^a-zA-Z0-9]+/ /g' \
+            | awk '{
+                for(i=1;i<=NF;i++){
+                  $i=toupper(substr($i,1,1)) tolower(substr($i,2))
+                }
+                printf "%s", $0
+              }' \
+            | tr -d ' ')
+
+          if [[ "${APP_NAME}" =~ ^[0-9] ]]; then
+            APP_NAME="App${APP_NAME}"
+          fi
+
+          APPLICATION_CLASS="${APP_NAME}Application"
+
+          echo "Repo Name: ${RAW_REPO}"
+          echo "Base Package: ${BASE_PACKAGE}"
+          echo "Application Class: ${APPLICATION_CLASS}"
+
+          "${GITHUB_WORKSPACE}/generator/scripts/generate.sh" \
+            "${GITHUB_WORKSPACE}/template" \
+            "${RAW_REPO}" \
+            "${BASE_PACKAGE}" \
+            "${APPLICATION_CLASS}"
+
+      - name: Validate no template tokens remain
+        run: |
+          set -euo pipefail
+
+          cd "${GITHUB_WORKSPACE}/template"
+
+          TOKENS=("letter-serial-backend" "letter_serial_backend" "letterserialbackend" "LetterSerialBackend")
+          for token in "${TOKENS[@]}"; do
+            if grep -R --line-number --binary-files=without-match --exclude-dir=.git -- "${token}" .; then
+              echo "Found leftover token: ${token}"
+              exit 1
+            fi
+          done
+
+      - name: Create GitHub repository
+        env:
+          TOKEN: ${{ secrets.REPO_TOKEN }}
+          OWNER: Kaleb9301
+          REPO: ${{ inputs.repo_name }}
+          VIS: ${{ inputs.visibility }}
+        run: |
+          set -euo pipefail
+
+          api="https://api.github.com"
+          if [[ -z "${TOKEN:-}" ]]; then
+            echo "REPO_TOKEN secret is missing or empty."
+            echo "Add a Personal Access Token as REPO_TOKEN."
+            exit 1
+          fi
+
+          # Validate token before attempting repo creation.
+          auth_check_code="$(curl -sS -o /tmp/auth-check.json -w '%{http_code}' \
+            -H "Authorization: token ${TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api}/user")"
+
+          if [[ "${auth_check_code}" != "200" ]]; then
+            echo "Token validation failed (HTTP ${auth_check_code})."
+            cat /tmp/auth-check.json || true
+            echo "Use a valid PAT in REPO_TOKEN (classic PAT recommended with 'repo' and 'workflow' scopes)."
+            exit 1
+          fi
+
+          payload="{\"name\":\"${REPO}\",\"private\":$( [ "${VIS}" = "private" ] && echo true || echo false )}"
+
+          resp="$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api}/user/repos" \
+            -d "${payload}")"
+
+          body="$(echo "${resp}" | head -n -1)"
+          code="$(echo "${resp}" | tail -n 1)"
+
+          echo "HTTP ${code}"
+          echo "${body}"
+
+          if [[ "${code}" != "201" ]]; then
+            if [[ "${code}" == "401" ]]; then
+              echo "Bad credentials: REPO_TOKEN is invalid/expired or lacks required permissions."
+              echo "Use a PAT with repo creation permission (classic PAT with 'repo' scope is recommended)."
+            fi
+            echo "Repository creation failed"
+            exit 1
+          fi
+
+      - name: Push generated code
+        env:
+          TOKEN: ${{ secrets.REPO_TOKEN }}
+          OWNER: Kaleb9301
+          REPO: ${{ inputs.repo_name }}
+        run: |
+          set -euo pipefail
+
+          cd "${GITHUB_WORKSPACE}/template"
+
+          rm -rf .git
+          git init
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add .
+          git commit -m "Initial commit from template"
+          git branch -M main
+
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.git"
+          git push -u origin main

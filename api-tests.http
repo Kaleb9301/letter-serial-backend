@@ -1,0 +1,47 @@
+@baseUrl = http://localhost:8080/api
+@username = admin
+@password = 123456
+@basicToken = YWRtaW46Y2hhbmdlX21l
+@correlationId = test-correlation-123
+
+### 1) Public health check (no auth required)
+GET {{baseUrl}}/public/ping
+Accept: application/json
+X-Correlation-Id: {{correlationId}}
+
+### 2) OpenAPI JSON (no auth required)
+GET {{baseUrl}}/v3/api-docs
+Accept: application/json
+
+### 3) Swagger UI (open in browser)
+GET {{baseUrl}}/swagger-ui.html
+
+### 4) Example authenticated request to a protected path
+# Replace /secure/example with a real protected endpoint when added.
+GET {{baseUrl}}/secure/example
+Authorization: Basic {{basicToken}}
+Accept: application/json
+
+### 5) Actuator health for monitoring (no auth required)
+GET {{baseUrl}}/actuator/health
+Accept: application/json
+
+### 6) Actuator info for version/app metadata (no auth required)
+GET {{baseUrl}}/actuator/info
+Accept: application/json
+
+### 7) Swagger check for production scenario (expect 404/401 if disabled)
+# In production profile, app.swagger.enabled is false by default.
+GET {{baseUrl}}/v3/api-docs
+Accept: application/json
+
+### 8) External LDAP login (auth-service)
+POST http://boainhousesys.bankofabyssinia.com:8085/auth-service/api/auth/ldap-login
+Content-Type: application/json
+Accept: application/json
+
+{
+	"username": "your.username",
+	"password": "your_password",
+	"applicationId": 0
+}
