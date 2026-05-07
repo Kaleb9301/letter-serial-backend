@@ -3,6 +3,7 @@ package com.bankofabyssinia.letter_serial_backend.config;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +17,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +35,11 @@ public class SecurityConfig {
     private String allowedOriginPatterns;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        @Qualifier("jwtAuthenticationFilter") OncePerRequestFilter jwtAuthenticationFilter,
+        CorsConfigurationSource corsConfigurationSource
+     ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -41,6 +48,8 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     auth.requestMatchers(
                             "/auth/**",
+                            "/letter_memo/api/auth/**",
+                            "/auth-service/api/auth/**",
                             "/public/**",
                             "/actuator/**",
                             "/error")
@@ -56,9 +65,10 @@ public class SecurityConfig {
 
                     auth.anyRequest().authenticated();
                 })
-                .httpBasic(Customizer.withDefaults())
-                .formLogin(AbstractHttpConfigurer::disable)
-                .logout(AbstractHttpConfigurer::disable);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // .httpBasic(Customizer.withDefaults())
+                // .formLogin(AbstractHttpConfigurer::disable)
+                // .logout(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

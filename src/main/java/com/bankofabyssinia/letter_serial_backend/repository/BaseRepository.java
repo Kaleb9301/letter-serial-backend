@@ -6,5 +6,5 @@ import org.springframework.data.repository.NoRepositoryBean;
 import com.bankofabyssinia.letter_serial_backend.entity.BaseEntity;
 
 @NoRepositoryBean
-public interface BaseRepository<T extends BaseEntity, ID> extends JpaRepository<T, ID> {
+public interface BaseRepository<T extends BaseEntity<?>, ID> extends JpaRepository<T, ID> {
 }

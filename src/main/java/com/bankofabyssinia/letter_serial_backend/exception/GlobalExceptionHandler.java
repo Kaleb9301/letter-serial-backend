@@ -31,18 +31,38 @@ import jakarta.validation.ConstraintViolationException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(JwtAuthenticationException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleJwtAuthentication(
+        JwtAuthenticationException ex,
+        HttpServletRequest request
+    ) {
+        return errorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, null);
+    }
+    
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleExternalService(
+        ExternalServiceException ex,
+        HttpServletRequest request
+    ) {
+        if (ex.getStatus() == HttpStatus.UNAUTHORIZED) {
+            return errorResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request, null);
+        }
+
+        return errorResponse(ex.getStatus(), ex.getMessage(), request, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleMethodArgumentNotValid(
         MethodArgumentNotValidException ex,
         HttpServletRequest request
     ) {
-    List<String> errors = ex.getBindingResult()
-        .getFieldErrors()
-        .stream()
-        .map(this::formatFieldError)
-        .collect(Collectors.toList());
+        List<String> errors = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(this::formatFieldError)
+            .collect(Collectors.toList());
 
-    return errorResponse(HttpStatus.BAD_REQUEST, "Validation failed", request, errors);
+        return errorResponse(HttpStatus.BAD_REQUEST, "Validation failed", request, errors);
     }
 
     @ExceptionHandler(BindException.class)
@@ -50,13 +70,13 @@ public class GlobalExceptionHandler {
         BindException ex,
         HttpServletRequest request
     ) {
-    List<String> errors = ex.getBindingResult()
-        .getFieldErrors()
-        .stream()
-        .map(this::formatFieldError)
-        .collect(Collectors.toList());
+        List<String> errors = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(this::formatFieldError)
+            .collect(Collectors.toList());
 
-    return errorResponse(HttpStatus.BAD_REQUEST, "Binding failed", request, errors);
+        return errorResponse(HttpStatus.BAD_REQUEST, "Binding failed", request, errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -64,12 +84,12 @@ public class GlobalExceptionHandler {
         ConstraintViolationException ex,
         HttpServletRequest request
     ) {
-    List<String> errors = ex.getConstraintViolations()
-        .stream()
-        .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-        .collect(Collectors.toList());
+        List<String> errors = ex.getConstraintViolations()
+            .stream()
+            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+            .collect(Collectors.toList());
 
-    return errorResponse(HttpStatus.BAD_REQUEST, "Constraint violation", request, errors);
+        return errorResponse(HttpStatus.BAD_REQUEST, "Constraint violation", request, errors);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -77,9 +97,9 @@ public class GlobalExceptionHandler {
         MethodArgumentTypeMismatchException ex,
         HttpServletRequest request
     ) {
-    String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
-    String detail = "Parameter '" + ex.getName() + "' should be of type " + expectedType;
-    return errorResponse(HttpStatus.BAD_REQUEST, detail, request, null);
+        String expectedType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+        String detail = "Parameter '" + ex.getName() + "' should be of type " + expectedType;
+        return errorResponse(HttpStatus.BAD_REQUEST, detail, request, null);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -87,7 +107,7 @@ public class GlobalExceptionHandler {
         HttpMessageNotReadableException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request", request, null);
+        return errorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request", request, null);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -95,7 +115,7 @@ public class GlobalExceptionHandler {
         HttpRequestMethodNotSupportedException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage(), request, null);
+        return errorResponse(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -103,7 +123,7 @@ public class GlobalExceptionHandler {
         HttpMediaTypeNotSupportedException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request, null);
+        return errorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
@@ -111,7 +131,7 @@ public class GlobalExceptionHandler {
         HttpMediaTypeNotAcceptableException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.NOT_ACCEPTABLE, ex.getMessage(), request, null);
+        return errorResponse(HttpStatus.NOT_ACCEPTABLE, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -119,7 +139,7 @@ public class GlobalExceptionHandler {
         NoHandlerFoundException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.NOT_FOUND, "Resource not found", request, null);
+        return errorResponse(HttpStatus.NOT_FOUND, "Resource not found", request, null);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -127,7 +147,7 @@ public class GlobalExceptionHandler {
         NoResourceFoundException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.NOT_FOUND, "Resource not found", request, null);
+        return errorResponse(HttpStatus.NOT_FOUND, "Resource not found", request, null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -135,7 +155,7 @@ public class GlobalExceptionHandler {
         AccessDeniedException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.FORBIDDEN, "Access denied", request, null);
+        return errorResponse(HttpStatus.FORBIDDEN, "Access denied", request, null);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -143,7 +163,7 @@ public class GlobalExceptionHandler {
         DataIntegrityViolationException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.CONFLICT, "Data integrity violation", request, null);
+        return errorResponse(HttpStatus.CONFLICT, "Data integrity violation", request, null);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -151,7 +171,7 @@ public class GlobalExceptionHandler {
         IllegalArgumentException ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+        return errorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(Exception.class)
@@ -159,7 +179,7 @@ public class GlobalExceptionHandler {
         Exception ex,
         HttpServletRequest request
     ) {
-    return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request, null);
+        return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request, null);
     }
 
     private ResponseEntity<ApiResponse<Map<String, Object>>> errorResponse(
@@ -168,22 +188,22 @@ public class GlobalExceptionHandler {
         HttpServletRequest request,
         Object errors
     ) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("timestamp", OffsetDateTime.now().toString());
-    payload.put("status", status.value());
-    payload.put("error", status.getReasonPhrase());
-    payload.put("path", request.getRequestURI());
-    if (errors != null) {
-        payload.put("errors", errors);
-    }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("timestamp", OffsetDateTime.now().toString());
+        payload.put("status", status.value());
+        payload.put("error", status.getReasonPhrase());
+        payload.put("path", request.getRequestURI());
+        if (errors != null) {
+            payload.put("errors", errors);
+        }
 
-    return ResponseEntity
-        .status(status)
-        .body(new ApiResponse<>(false, message, payload));
+        return ResponseEntity
+            .status(status)
+            .body(new ApiResponse<>(false, message, payload));
     }
 
     private String formatFieldError(FieldError fieldError) {
-    String defaultMessage = fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "is invalid";
-    return fieldError.getField() + ": " + defaultMessage;
+        String defaultMessage = fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "is invalid";
+        return fieldError.getField() + ": " + defaultMessage;
     }
 }

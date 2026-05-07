@@ -1,0 +1,147 @@
+{"properties": [
+  {
+    "name": "app.request-logging.enabled",
+    "type": "java.lang.Boolean",
+    "description": "Properties for enabling request logging. When enabled, all incoming HTTP requests will be logged with details such as method, URL, headers, and body (if applicable). This is useful for debugging and monitoring purposes."
+  },
+  {
+    "name": "app.swagger.enabled",
+    "type": "java.lang.Boolean",
+    "description": "A description for 'app.swagger.enabled'"
+  },
+  {
+    "name": "app.cors.allowed-origin-patterns",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cors.allowed-origin-patterns'"
+  },
+  {
+    "name": "app.datasource.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.enabled'"
+  },
+  {
+    "name": "app.datasource.primary",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.primary'"
+  },
+  {
+    "name": "app.datasource.connections.core.url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.url'"
+  },
+  {
+    "name": "app.datasource.connections.core.username",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.username'"
+  },
+  {
+    "name": "app.datasource.connections.core.password",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.password'"
+  },
+  {
+    "name": "app.datasource.connections.core.driver-class-name",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.driver-class-name'"
+  },
+  {
+    "name": "app.datasource.connections.core.driver-class-name",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.driver-class-name'"
+  },
+  {
+    "name": "app.datasource.connections.core.maximum-pool-size",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.maximum-pool-size'"
+  },
+  {
+    "name": "app.datasource.connections.core.minimum-idle",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.core.minimum-idle'"
+  },
+  {
+    "name": "app.datasource.connections.audit.url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.url'"
+  },
+  {
+    "name": "app.datasource.connections.audit.username",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.username'"
+  },
+  {
+    "name": "app.datasource.connections.audit.password",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.password'"
+  },
+  {
+    "name": "app.datasource.connections.audit.driver-class-name",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.driver-class-name'"
+  },
+  {
+    "name": "app.datasource.connections.audit.maximum-pool-size",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.maximum-pool-size'"
+  },
+  {
+    "name": "app.datasource.connections.audit.minimum-idle",
+    "type": "java.lang.String",
+    "description": "A description for 'app.datasource.connections.audit.minimum-idle'"
+  },
+  {
+    "name": "app.auth.ldap.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'app.auth.ldap.enabled'"
+  },
+  {
+    "name": "app.auth.ldap.url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.auth.ldap.url'"
+  },
+  {
+    "name": "app.auth.ldap.connect-timeout-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'app.auth.ldap.connect-timeout-ms'"
+  },
+  {
+    "name": "app.auth.ldap.read-timeout-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'app.auth.ldap.read-timeout-ms'"
+  },
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "jwt.expiration",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.expiration'"
+  },
+  {
+    "name": "jwt.refresh-expiration",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.refresh-expiration'"
+  },
+  {
+    "name": "app.logging.base-path",
+    "type": "java.lang.String",
+    "description": "A description for 'app.logging.base-path'"
+  },
+  {
+    "name": "email.microservice.url",
+    "type": "java.lang.String",
+    "description": "A description for 'email.microservice.url'"
+  },
+  {
+    "name": "email.microservice.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'email.microservice.api-key'"
+  },
+  {
+    "name": "email.microservice.timeout-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'email.microservice.timeout-ms'"
+  }
+]}

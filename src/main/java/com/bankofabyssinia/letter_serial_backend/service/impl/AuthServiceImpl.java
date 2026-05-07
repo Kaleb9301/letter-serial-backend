@@ -1,6 +1,7 @@
 package com.bankofabyssinia.letter_serial_backend.service.impl;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -10,10 +11,15 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import com.bankofabyssinia.letter_serial_backend.dto.Request.LdapLoginRequest;
+import com.bankofabyssinia.letter_serial_backend.dto.Request.RefreshTokenRequest;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LdapLoginResponse;
+import com.bankofabyssinia.letter_serial_backend.exception.ExternalServiceException;
 import com.bankofabyssinia.letter_serial_backend.service.AuthService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final RestClient restClient;
@@ -21,8 +27,11 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.auth.ldap.enabled:true}")
     private boolean ldapEnabled;
 
-    @Value("${app.auth.ldap.url:}")
+    @Value("${app.auth.ldap.url:}/ldap-login")
     private String ldapLoginUrl;
+
+    @Value("${app.auth.ldap.url:}/refresh-token-LDAP")
+    private String ldapRefreshUrl;
 
     public AuthServiceImpl(
             @Value("${app.auth.ldap.connect-timeout-ms:5000}") int connectTimeoutMs,
@@ -56,9 +65,50 @@ public class AuthServiceImpl implements AuthService {
             }
             return response;
         } catch (RestClientResponseException ex) {
-            throw new IllegalArgumentException("LDAP authentication failed with status: " + ex.getStatusCode().value());
+            int raw = ex.getStatusCode() != null ? ex.getStatusCode().value() : -1;
+            HttpStatus status = HttpStatus.resolve(raw);
+            if (status == null) {
+                status = HttpStatus.BAD_GATEWAY;
+            }
+            throw new ExternalServiceException("LDAP authentication failed with status: " + raw, status, ex);
         } catch (RestClientException ex) {
-            throw new IllegalStateException("Unable to reach LDAP authentication service");
+            throw new ExternalServiceException("Unable to reach LDAP authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
         }
     }
+
+    @Override
+    public LdapLoginResponse ldapRefresh(RefreshTokenRequest request) {
+        log.info("LDAP Authentication enabled: {}", ldapEnabled);
+        log.info("LDAP Refresh URL: {}", ldapRefreshUrl);
+        if (!ldapEnabled) {
+            throw new IllegalStateException("LDAP authentication integration is disabled");
+        }
+        if (!StringUtils.hasText(ldapRefreshUrl)) {
+            throw new IllegalStateException("app.auth.ldap.url is not configured");
+        }
+
+        try {
+            LdapLoginResponse response = restClient.post()
+                    .uri(ldapRefreshUrl)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(LdapLoginResponse.class);
+
+            if (response == null) {
+                throw new IllegalStateException("LDAP service returned empty response");
+            }
+            return response;
+        } catch (RestClientResponseException ex) {
+            int raw = ex.getStatusCode() != null ? ex.getStatusCode().value() : -1;
+            HttpStatus status = HttpStatus.resolve(raw);
+            if (status == null) {
+                status = HttpStatus.BAD_GATEWAY;
+            }
+            throw new ExternalServiceException("LDAP authentication failed with status: " + raw, status, ex);
+        } catch (RestClientException ex) {
+            throw new ExternalServiceException("Unable to reach LDAP authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
+        }
+    }
+
 }
