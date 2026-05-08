@@ -2,9 +2,8 @@ package com.bankofabyssinia.letter_serial_backend.config;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Collections;
-// import java.util.Optional;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,11 +13,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-// import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-// import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
@@ -27,18 +24,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-// import com.bankofabyssinia.letter_serial_backend.entity.User;
-// import com.bankofabyssinia.letter_serial_backend.repository.UserRepository;
-// import com.bankofabyssinia.letter_serial_backend.service.JwtUtil;
+import com.bankofabyssinia.letter_serial_backend.exception.JwtAuthenticationException;
 
-// import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-
-import com.bankofabyssinia.letter_serial_backend.exception.JwtAuthenticationException;
 
 
 
@@ -59,6 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // private final RestClient restClient;
 
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Value("${app.auth.ldap.enabled:true}")
     private boolean ldapEnabled;
@@ -71,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @Value("${app.auth.ldap.connect-timeout-ms:5000}") int connectTimeoutMs,
             @Value("${app.auth.ldap.read-timeout-ms:15000}") int readTimeoutMs
     ) {
-        // this.handlerExceptionResolver = handlerExceptionResolver;
+        this.handlerExceptionResolver = handlerExceptionResolver;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(connectTimeoutMs);
         requestFactory.setReadTimeout(readTimeoutMs);
@@ -92,6 +85,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Auth endpoints
             "/api/auth/**",
+            "/auth-service/api/auth/**",
+           "/auth/**",
             "/api/public/**",
             "/api/orale/employeesListByUUID/**"
     );
@@ -134,10 +129,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.info("LDAP Authentication enabled: {}", ldapEnabled);
         log.info("LDAP Login URL: {}", validationUrl);
         if (!ldapEnabled) {
-            throw new IllegalStateException("LDAP authentication integration is disabled");
+            resolveJwtAuthenticationException(request, response,
+                    new JwtAuthenticationException("LDAP authentication integration is disabled"));
+            return;
         }
         if (!StringUtils.hasText(validationUrl)) {
-            throw new IllegalStateException("app.auth.ldap.url is not configured");
+            resolveJwtAuthenticationException(request, response,
+                    new JwtAuthenticationException("app.auth.ldap.url is not configured"));
+            return;
         }
 
         String path = request.getServletPath(); // ✅ IMPORTANT FIX FOR WAR
@@ -147,39 +146,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         boolean isPublic = PUBLIC_ENDPOINTS.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
-            if (isPublic) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            if (!ldapEnabled) {
-                throw new JwtAuthenticationException("LDAP authentication integration is disabled");
-            }
-            if (!StringUtils.hasText(validationUrl)) {
-                throw new JwtAuthenticationException("app.auth.ldap.url is not configured");
-            }
-
-            String jwt = parseJwt(request);
-            if (jwt == null) {
-                throw new JwtAuthenticationException("Missing Authorization header");
-            }
-
-            if (!validateToken(jwt, request)) {
-                throw new JwtAuthenticationException("Invalid or expired token");
-            }
-
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    "validated-user",
-                    null,
-                    Collections.emptyList());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            try {
-                filterChain.doFilter(request, response);
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+        if (isPublic) {
+            filterChain.doFilter(request, response);
+            return;
         }
+
+        String jwt = parseJwt(request);
+        if (jwt == null) {
+            resolveJwtAuthenticationException(request, response,
+                    new JwtAuthenticationException("Missing Authorization header"));
+            return;
+        }
+
+        if (!validateToken(jwt, request)) {
+            resolveJwtAuthenticationException(request, response,
+                    new JwtAuthenticationException("Invalid or expired token"));
+            return;
+        }
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                "validated-user",
+                null,
+                Collections.emptyList());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private void resolveJwtAuthenticationException(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            JwtAuthenticationException exception) throws IOException, ServletException {
+        handlerExceptionResolver.resolveException(request, response, null, exception);
+    }
     private String parseJwt(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
 
@@ -225,7 +228,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             log.info("Token validation status: {}", response.getStatusCode());
 
-            return response.getStatusCode().is2xxSuccessful();
+           
+
+            return response.getBody() != null && response.getBody().contains("\"isValid\":true");
 
         } catch (RestClientException e) {
             log.error("Token validation error: {}", e.getMessage());
