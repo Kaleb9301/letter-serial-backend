@@ -14,15 +14,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.bankofabyssinia.letter_serial_backend.dto.Request.LdapLoginRequest;
+import com.bankofabyssinia.letter_serial_backend.dto.Request.LogOutDto;
 import com.bankofabyssinia.letter_serial_backend.dto.Request.LoginCredentials;
 import com.bankofabyssinia.letter_serial_backend.dto.Request.RefreshTokenRequest;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.ApiResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LdapLoginResponse;
+import com.bankofabyssinia.letter_serial_backend.dto.Response.LogOutResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.UserToken;
 import com.bankofabyssinia.letter_serial_backend.entity.User;
 import com.bankofabyssinia.letter_serial_backend.repository.UserRepository;
@@ -158,29 +159,29 @@ public class AuthController extends BaseController {
         return ResponseEntity.ok(buildCompleteUserToken(user, newAccess, newRefresh));
     }
 
-    @SuppressWarnings("null")
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
+    // @SuppressWarnings("null")
+    // @PostMapping("/logout")
+    // public ResponseEntity<Void> logout(
+    //         @RequestHeader(value = "Authorization", required = false) String authorization) {
 
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.noContent().build();
-        }
+    //     if (authorization == null || !authorization.startsWith("Bearer ")) {
+    //         return ResponseEntity.noContent().build();
+    //     }
 
-        String token = authorization.substring(7);
+    //     String token = authorization.substring(7);
 
-        if (!jwtUtil.validateToken(token)) {
-            return ResponseEntity.noContent().build();
-        }
+    //     if (!jwtUtil.validateToken(token)) {
+    //         return ResponseEntity.noContent().build();
+    //     }
 
-        String email = jwtUtil.extractUsername(token);
-        userRepository.findByEmail(email).ifPresent(user -> {
-            clearSessions(user);
-            userRepository.save(user);
-        });
+    //     String email = jwtUtil.extractUsername(token);
+    //     userRepository.findByEmail(email).ifPresent(user -> {
+    //         clearSessions(user);
+    //         userRepository.save(user);
+    //     });
 
-        return ResponseEntity.noContent().build();
-    }
+    //     return ResponseEntity.noContent().build();
+    // }
 
     // ────────────────────────────────────────────────
     // Helper methods
@@ -297,6 +298,13 @@ public class AuthController extends BaseController {
     @PostMapping("/ldap-refresh")
     public ResponseEntity<ApiResponse<LdapLoginResponse>> ldapRefresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ok("Token refreshed successfully", authService.ldapRefresh(request));
+    }
+
+    @Operation(summary = "LDAP refresh", description = "Refreshes the LDAP token by delegating to auth-service")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogOutDto request) {
+        LogOutResponse response = authService.logout(request);
+        return ok(response.getMessage());
     }
 
 }

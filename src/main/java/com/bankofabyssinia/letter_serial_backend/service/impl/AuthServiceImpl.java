@@ -11,8 +11,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import com.bankofabyssinia.letter_serial_backend.dto.Request.LdapLoginRequest;
+import com.bankofabyssinia.letter_serial_backend.dto.Request.LogOutDto;
 import com.bankofabyssinia.letter_serial_backend.dto.Request.RefreshTokenRequest;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LdapLoginResponse;
+import com.bankofabyssinia.letter_serial_backend.dto.Response.LogOutResponse;
 import com.bankofabyssinia.letter_serial_backend.exception.ExternalServiceException;
 import com.bankofabyssinia.letter_serial_backend.service.AuthService;
 
@@ -33,6 +35,10 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.auth.ldap.url:}/refresh-token-LDAP")
     private String ldapRefreshUrl;
 
+    @Value("${app.auth.ldap.url:}/logout")
+    private String logoutUrl;
+
+
     public AuthServiceImpl(
             @Value("${app.auth.ldap.connect-timeout-ms:5000}") int connectTimeoutMs,
             @Value("${app.auth.ldap.read-timeout-ms:15000}") int readTimeoutMs
@@ -43,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
         this.restClient = RestClient.builder().requestFactory(requestFactory).build();
     }
 
+    
     @Override
     public LdapLoginResponse ldapLogin(LdapLoginRequest request) {
         if (!ldapEnabled) {
@@ -61,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
                     .body(LdapLoginResponse.class);
 
             if (response == null) {
-                throw new IllegalStateException("LDAP service returned empty response");
+                throw new IllegalStateException("Authentication service returned empty response");
             }
             return response;
         } catch (RestClientResponseException ex) {
@@ -70,7 +77,7 @@ public class AuthServiceImpl implements AuthService {
             if (status == null) {
                 status = HttpStatus.BAD_GATEWAY;
             }
-            throw new ExternalServiceException("LDAP authentication failed with status: " + raw, status, ex);
+            throw new ExternalServiceException("Authentication failed with status: " + raw, status, ex);
         } catch (RestClientException ex) {
             throw new ExternalServiceException("Unable to reach LDAP authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
         }
@@ -78,10 +85,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LdapLoginResponse ldapRefresh(RefreshTokenRequest request) {
-        log.info("LDAP Authentication enabled: {}", ldapEnabled);
+        log.info("Authentication service enabled: {}", ldapEnabled);
         log.info("LDAP Refresh URL: {}", ldapRefreshUrl);
         if (!ldapEnabled) {
-            throw new IllegalStateException("LDAP authentication integration is disabled");
+            throw new IllegalStateException("Authentication integration is disabled");
         }
         if (!StringUtils.hasText(ldapRefreshUrl)) {
             throw new IllegalStateException("app.auth.ldap.url is not configured");
@@ -96,6 +103,42 @@ public class AuthServiceImpl implements AuthService {
                     .body(LdapLoginResponse.class);
 
             if (response == null) {
+                throw new IllegalStateException("Authentication service returned empty response");
+            }
+            return response;
+        } catch (RestClientResponseException ex) {
+            int raw = ex.getStatusCode() != null ? ex.getStatusCode().value() : -1;
+            HttpStatus status = HttpStatus.resolve(raw);
+            if (status == null) {
+                status = HttpStatus.BAD_GATEWAY;
+            }
+            throw new ExternalServiceException("Authentication failed with status: " + raw, status, ex);
+        } catch (RestClientException ex) {
+            throw new ExternalServiceException("Unable to reach authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
+        }
+    }
+
+    @Override
+    public LogOutResponse logout(LogOutDto request) {
+        // Implement logout logic if needed, or delegate to auth-service if it has a logout endpoint
+        log.info("Authentication service enabled: {}", ldapEnabled);
+        log.info("Logout URL: {}", logoutUrl);
+        if (!ldapEnabled) {
+            throw new IllegalStateException("Authentication integration is disabled");
+        }
+        if (!StringUtils.hasText(ldapRefreshUrl)) {
+            throw new IllegalStateException("app.auth.ldap.url is not configured");
+        }
+
+        try {
+            LogOutResponse response = restClient.post()
+                    .uri(logoutUrl)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(LogOutResponse.class);
+
+            if (response == null) {
                 throw new IllegalStateException("LDAP service returned empty response");
             }
             return response;
@@ -105,9 +148,9 @@ public class AuthServiceImpl implements AuthService {
             if (status == null) {
                 status = HttpStatus.BAD_GATEWAY;
             }
-            throw new ExternalServiceException("LDAP authentication failed with status: " + raw, status, ex);
+            throw new ExternalServiceException("Logout  failed with status: " + raw, status, ex);
         } catch (RestClientException ex) {
-            throw new ExternalServiceException("Unable to reach LDAP authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
+            throw new ExternalServiceException("Unable to reach authentication service", HttpStatus.SERVICE_UNAVAILABLE, ex);
         }
     }
 
