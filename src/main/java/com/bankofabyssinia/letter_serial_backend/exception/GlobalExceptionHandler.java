@@ -189,17 +189,17 @@ public class GlobalExceptionHandler {
         Object errors
     ) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("timestamp", OffsetDateTime.now().toString());
-        payload.put("status", status.value());
-        payload.put("error", status.getReasonPhrase());
+        // payload.put("timestamp", OffsetDateTime.now().toString());
+        // payload.put("status", status.value());
+        // payload.put("error", status.getReasonPhrase());
         payload.put("path", request.getRequestURI());
-        if (errors != null) {
+        // if (errors != null) {
             payload.put("errors", errors);
-        }
+        // }
 
         return ResponseEntity
             .status(status)
-            .body(new ApiResponse<>(false, message, payload));
+            .body(new ApiResponse<>(status.value(), false, OffsetDateTime.now().toString(), message, payload));
     }
 
     private String formatFieldError(FieldError fieldError) {
