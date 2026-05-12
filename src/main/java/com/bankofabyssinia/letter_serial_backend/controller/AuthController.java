@@ -25,6 +25,7 @@ import com.bankofabyssinia.letter_serial_backend.dto.Request.RefreshTokenRequest
 import com.bankofabyssinia.letter_serial_backend.dto.Response.ApiResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LdapLoginResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LogOutResponse;
+import com.bankofabyssinia.letter_serial_backend.dto.Response.TokenValidationResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.UserToken;
 import com.bankofabyssinia.letter_serial_backend.entity.User;
 import com.bankofabyssinia.letter_serial_backend.repository.UserRepository;
@@ -310,6 +311,12 @@ public class AuthController extends BaseController {
         return ok(response.getMessage(), httpRequest.getRequestURI());
     }
 
-
+    // validate token endpoint
+        @Operation(summary = "Validate token", description = "Validates the provided token by delegating to auth-service")
+        @GetMapping("/validate-token")
+        public ResponseEntity<ApiResponse<TokenValidationResponse>> validateToken(HttpServletRequest httpServletRequest) {
+            TokenValidationResponse response = authService.validateToken(httpServletRequest);
+            return ok("Token is valid", response, httpServletRequest.getRequestURI());
+        }  
 
 }

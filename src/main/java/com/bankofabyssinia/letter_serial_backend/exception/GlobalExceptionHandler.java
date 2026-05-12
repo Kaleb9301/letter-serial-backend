@@ -1,7 +1,7 @@
 package com.bankofabyssinia.letter_serial_backend.exception;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashMap;
+// import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,8 +27,10 @@ import com.bankofabyssinia.letter_serial_backend.dto.Response.ApiResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(JwtAuthenticationException.class)
@@ -196,6 +198,9 @@ public class GlobalExceptionHandler {
         // // if (errors != null) {
         //     payload.put("errors", errors);
         // // }
+
+
+        log.error("Error occurred: status={}, message={}, path={}, errors={}", status.value(), message, request.getRequestURI(), errors);
 
         return ResponseEntity
             .status(status)

@@ -5,6 +5,9 @@ import com.bankofabyssinia.letter_serial_backend.dto.Request.LogOutDto;
 import com.bankofabyssinia.letter_serial_backend.dto.Request.RefreshTokenRequest;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LdapLoginResponse;
 import com.bankofabyssinia.letter_serial_backend.dto.Response.LogOutResponse;
+import com.bankofabyssinia.letter_serial_backend.dto.Response.TokenValidationResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthService {
 
@@ -13,4 +16,6 @@ public interface AuthService {
     LdapLoginResponse ldapRefresh(RefreshTokenRequest request);
 
     LogOutResponse logout(LogOutDto request);
+
+    TokenValidationResponse validateToken(HttpServletRequest httpServletRequest);
 }
