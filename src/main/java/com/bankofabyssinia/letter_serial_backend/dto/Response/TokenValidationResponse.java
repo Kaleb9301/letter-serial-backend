@@ -9,6 +9,6 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TokenValidationResponse {
     @JsonProperty("isValid")
-    private boolean isValid;
+    private boolean valid;
     private String accessToken;
 }
