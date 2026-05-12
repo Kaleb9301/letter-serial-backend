@@ -188,18 +188,18 @@ public class GlobalExceptionHandler {
         HttpServletRequest request,
         Object errors
     ) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        // payload.put("timestamp", OffsetDateTime.now().toString());
-        // payload.put("status", status.value());
-        // payload.put("error", status.getReasonPhrase());
-        payload.put("path", request.getRequestURI());
-        // if (errors != null) {
-            payload.put("errors", errors);
-        // }
+        // Map<String, Object> payload = new LinkedHashMap<>();
+        // // payload.put("timestamp", OffsetDateTime.now().toString());
+        // // payload.put("status", status.value());
+        // // payload.put("error", status.getReasonPhrase());
+        // payload.put("path", request.getRequestURI());
+        // // if (errors != null) {
+        //     payload.put("errors", errors);
+        // // }
 
         return ResponseEntity
             .status(status)
-            .body(new ApiResponse<>(status.value(), false, OffsetDateTime.now().toString(), message, payload));
+            .body(new ApiResponse<>(status.value(), false, OffsetDateTime.now().toString(), message, request.getRequestURI(), null));
     }
 
     private String formatFieldError(FieldError fieldError) {
